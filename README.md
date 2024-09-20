@@ -13,7 +13,7 @@ Addressing these vulnerabilities with careful and timely remediation can resolve
 ## Scope of Testing
 Testing and validation will be performed between August 1, 2024, and August 31, 2024. The project's scope is limited to AI’s internal network, public-facing servers, and databases (cloud-based or on-premises). 
 
-	These tests will be conducted where feasible on duplicate but functionally identical versions of AI’s internal networks and networked assets to not impact AI’s day-to-day operations.
+These tests will be conducted where feasible on duplicate but functionally identical versions of AI’s internal networks and networked assets to not impact AI’s day-to-day operations.
 
 There are no time-of-day restrictions; however, AI has requested that CSC not approach any physical sites or attempt any form of social engineering. Additionally, they have stated that CSC is not to conduct any denial of service exercises, where applicable.   
 
@@ -48,8 +48,6 @@ Below is a high-level view of the nine most notable vulnerabilities discovered t
 
 _Table 4: Findings List_
 
-
-
 Initial vulnerability scans against AIs public-facing web applications revealed vulnerability to SQL injection. Testers note they could access internal databases and execute administration operations, notably exfiltrating data. 
 Figure 1: SQL Injection Vulnerabilities discovered by Tenable Nessus
 
@@ -57,30 +55,16 @@ Additionally, testers determined several of AIs web servers were exposing sensit
 
 Using data from previous SQL attacks, testers discovered account numbers corresponding to user accounts. With this information, they were able to modify the browser's 'acct' parameter to send a desired account number. As this information is not correctly verified, the tester had access to any user's account for which they had an account number, which is considered broken access control.
 
-
 Testers noted that this web server was not hosted locally but inside Amazon Web Services (AWS). With this knowledge and the assistance of an overly permissive security group, testers were able to escalate privileges again within the AWS environment; this was accomplished using a tool called Pacu. 
 
 
 Figure 2: AWS privilege escalation using “Pacu” (https://medium.com/@terminalsandcoffee/aws-iam-privilege-escalation-by-policy-misconfiguration-4be3aec755d4
 
-
-
-
-
-
-
-
-
-
-
-
-
 Initial network scans using Nmap revealed several open ports, notably port 3389, corresponding to RDP or Remote Desktop Protocol. Testers determined they were then able to resolve several hosts within AIs' internal networks. They were then able to execute brute-force attacks through RDP against those hosts, facilitating privilege escalation. Testers were also able to navigate to internal file shares and exfiltrate sensitive data. 
-
 
 Figure 3: Nmap scan reveals open ports, specifically 3389/Remote Desktop Protocol (3389)
 
-	Testers also determined that the on-premise Exchange server accepts untrusted connections over port 443, typically associated with CVE-2021-26855. Leveraging this vulnerability allowed testers to exfiltrate entire mailboxes from the mail server. Testers were able to deploy subsequent exploits that allowed for credential theft, privilege escalation, and address-book (offline address book, or OAB) theft. 
+Testers also determined that the on-premise Exchange server accepts untrusted connections over port 443, typically associated with CVE-2021-26855. Leveraging this vulnerability allowed testers to exfiltrate entire mailboxes from the mail server. Testers were able to deploy subsequent exploits that allowed for credential theft, privilege escalation, and address-book (offline address book, or OAB) theft. 
 
 Note: This and other CVEs also appear in vulnerability scans using Nessus.
 
@@ -88,71 +72,27 @@ Figure 4: Using Nessus’ plugin search for specific CVEs
 
 The credentials appropriated at this stage were then compared with credentials from a previous stage, and testers noted a relatively high rate of re-use, indicating a weak password policy. 
 
-	Through careful parsing of the data extracted from mailboxes and compromised hosts, the testers were then able to enumerate two internal web servers: an Oracle WebLogic server and an Apache web server. 
+Through careful parsing of the data extracted from mailboxes and compromised hosts, the testers were then able to enumerate two internal web servers: an Oracle WebLogic server and an Apache web server. 
 
-	Testers first successfully compromised the Oracle WebLogic server as they determined it was vulnerable to CVE-2020-14883. This CVE allows for remote code execution wherein the tester can “execute arbitrary commands” and take complete control of the host. This is accomplished by exploiting a flaw in the configuration of the “Path Traversal blacklist of the server URL, which you can find inside a handler class of the WebLogic HTTP access.” Exploiting this resource gave testers access to AI's ERP tool (SAP). 
+Testers first successfully compromised the Oracle WebLogic server as they determined it was vulnerable to CVE-2020-14883. This CVE allows for remote code execution wherein the tester can “execute arbitrary commands” and take complete control of the host. This is accomplished by exploiting a flaw in the configuration of the “Path Traversal blacklist of the server URL, which you can find inside a handler class of the WebLogic HTTP access.” Exploiting this resource gave testers access to AI's ERP tool (SAP). 
 
-	Testers then determined that AI at one point, installed an Oracle WebLogic Server proxy plug-in for the Apache HTTP server. Using their escalated privileges from the previous compromise of the Oracle WebLogic server, testers could move laterally to the Apache server. 
+Testers then determined that AI at one point, installed an Oracle WebLogic Server proxy plug-in for the Apache HTTP server. Using their escalated privileges from the previous compromise of the Oracle WebLogic server, testers could move laterally to the Apache server. 
 
 At that point, they determined it was vulnerable to CVE-2019-0211. This particular CVE allows, again, for the execution of arbitrary code. In this case, however, the testers needed to wait until the Apache server had been ‘gracefully restarted’ to move forward. This process happens nightly, so our testers gained local root access to this particular server the following business day.  
 
-	With a toehold in the internal network, testers directed their attention to other hosts discovered during enumeration. Chief among them was an array of Cisco Firewalls, which they could breach using default login credentials; trying credentials easily sourced from a simple Google search in an instance such as this is standard practice. With those credentials, testers functionally owned a large portion of AIs internal network landscape. 
+With a toehold in the internal network, testers directed their attention to other hosts discovered during enumeration. Chief among them was an array of Cisco Firewalls, which they could breach using default login credentials; trying credentials easily sourced from a simple Google search in an instance such as this is standard practice. With those credentials, testers functionally owned a large portion of AIs internal network landscape. 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Finding Number
-Finding Name
-External Reference
-1
-CVE-2020-14882
-https://nvd.nist.gov/vuln/detail/CVE-2020-14882
-2
-CVE-2021-26855
-https://nvd.nist.gov/vuln/detail/CVE-2021-26855
-3
-Unpatched RDP exposed
-https://www.cloudflare.com/learning/access-management/rdp-security-risks/
-4
-SQL Injection
-https://owasp.org/www-community/attacks/SQL_Injection
-5
-Default credentials
-https://owasp.org/www-project-top-10-insider-threats/docs/2023/INT07_2023-Insecure_Passwords_and_Default_Credentials
-6
-CVE-2019-0211
-https://nvd.nist.gov/vuln/detail/CVE-2019-0211
-7
-Sensitive data exposure
-https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
-8
-Broken access control
-https://owasp.org/Top10/A01_2021-Broken_Access_Control/
-9
-Misconfigured AWS
-https://www.barradvisory.com/resource/cloud-misconfiguration/
+| Finding Number | Finding Name | External Reference |
+|----------------|--------------|---------------------|
+|1 | CVE-2020-14882 | https://nvd.nist.gov/vuln/detail/CVE-2020-14882|
+|2 | CVE-2021-26855 | https://nvd.nist.gov/vuln/detail/CVE-2021-26855|
+|3 | Unpatched RDP exposed | https://www.cloudflare.com/learning/access-management/rdp-security-risks/|
+|4|SQL Injection|https://owasp.org/www-community/attacks/SQL_Injection|
+|5|Default credentials|https://owasp.org/www-project-top-10-insider-threats/docs/2023/INT07_2023-Insecure_Passwords_and_Default_Credentials|
+|6|CVE-2019-0211|https://nvd.nist.gov/vuln/detail/CVE-2019-0211|
+|7|Sensitive data exposure|https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure|
+|8|Broken access control|https://owasp.org/Top10/A01_2021-Broken_Access_Control/|
+|9|Misconfigured AWS|https://www.barradvisory.com/resource/cloud-misconfiguration/|
 
 _Table 5: External References_
 
